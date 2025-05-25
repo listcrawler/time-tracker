@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+.venv/
+.mypy_cache/
+.ruff_cache/
+
+# Data files — keep out of version control
+*.json
+*.db
+
+# Exceptions: config and lock files that belong in the repo
+!pyproject.toml
+!uv.lock
+.codex

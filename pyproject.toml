@@ -1,0 +1,65 @@
+[project]
+name = "time-tracker"
+version = "0.1.0"
+description = "Terminal time tracker with JSON, SQLite, and PostgreSQL backends"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.11.5",
+    "textual>=3.2.0",
+]
+
+[project.optional-dependencies]
+postgres = ["psycopg2-binary>=2.9", "keyring>=25.0"]
+github   = ["PyGithub>=2.0"]
+
+[project.scripts]
+time-tracker = "time_tracker:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "debugpy>=1.8.14",
+    "mypy>=1.15",
+    "PyGithub>=2.0",
+    "ruff>=0.11",
+    "textual-dev>=1.7.0",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+]
+ignore = [
+    "E701",  # multiple statements on one line — used intentionally for aligned if-blocks
+]
+
+[tool.ruff.format]
+# Compatible with black defaults
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true   # textual, psycopg2, PyGithub lack complete stubs
+
+[[tool.mypy.overrides]]
+# sqlite3 and psycopg2 context managers return untyped cursors/connections;
+# annotating the backends fully would require significant boilerplate for no gain.
+module = [
+    "time_tracker.backends.sqlite_backend",
+    "time_tracker.backends.postgres_backend",
+]
+ignore_errors = true

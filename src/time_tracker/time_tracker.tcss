@@ -1,0 +1,886 @@
+/* ── Entry list ──────────────────────────────────────────────────────────── */
+
+#col-header {
+    height: 1;
+    padding: 0 1;
+    background: $primary-darken-2;
+    color: $text-muted;
+    text-style: bold;
+}
+
+#col-header.timeline-active {
+    background: $warning-darken-2;
+    color: $text;
+}
+
+ListView {
+    height: 1fr;
+}
+
+ListView.timeline-active {
+    border: tall $warning-darken-2;
+}
+
+#mode-line {
+    height: 1;
+    padding: 0 1;
+    background: $primary-darken-3;
+    color: $text-muted;
+    text-style: italic;
+}
+
+#mode-line.timeline-active {
+    background: $warning-darken-2;
+    color: $text;
+    text-style: bold;
+}
+
+#bottom-panel {
+    height: 5;
+}
+
+#entry-status {
+    height: 5;
+    padding: 0 1;
+    color: $text-muted;
+    width: 1fr;
+}
+
+#time-totals {
+    width: 18;
+    height: 5;
+    padding: 1 1;
+    border-left: solid $primary-darken-2;
+    color: $text-muted;
+}
+
+EntryItem.current {
+    border-top: tall $success;
+    border-bottom: tall $success;
+}
+
+EntryItem.cross-date {
+    height: auto;
+}
+
+ListView > ListItem {
+    padding: 0 1;
+}
+
+ListView > ListItem.--highlight {
+    background: $accent-darken-2;
+}
+
+/* ── Report screen ───────────────────────────────────────────────────────── */
+
+#report-layout {
+    height: 1fr;
+}
+
+/* ── left: filter inputs ── */
+
+#report-filter-col {
+    width: 30;
+    padding: 1 2;
+    border-right: solid $primary-darken-2;
+    background: $surface;
+}
+
+#report-title {
+    text-align: center;
+    text-style: bold;
+    margin-bottom: 1;
+    width: 1fr;
+}
+
+#report-filter-col Label {
+    height: 1;
+    color: $text-muted;
+    margin-top: 1;
+}
+
+#report-filter-col Input {
+    margin-top: 0;
+    width: 1fr;
+}
+
+#cal-row {
+    height: auto;
+    width: 1fr;
+}
+
+#cal-row Input {
+    width: 1fr;
+}
+
+.cal-open {
+    width: 4;
+    min-width: 4;
+    height: 3;
+    padding: 0;
+    margin-left: 1;
+    background: $primary-darken-2;
+    color: $text;
+}
+
+/* ── middle: available values (like entry modal recents) ── */
+
+#report-values-col {
+    width: 26;
+    padding: 1 1;
+    border-right: solid $primary-darken-2;
+    background: $surface-darken-1;
+}
+
+#report-values-title {
+    text-style: bold;
+    color: $text-muted;
+    margin-bottom: 1;
+    height: 1;
+}
+
+#report-values-list {
+    height: 1fr;
+    border: none;
+    background: transparent;
+    padding: 0;
+}
+
+#report-values-list > ListItem {
+    padding: 0 1;
+    height: 1;
+}
+
+#report-values-list > ListItem.--highlight {
+    background: $accent-darken-2;
+}
+
+/* ── right: active filters + results ── */
+
+#report-results-col {
+    height: 1fr;
+    width: 1fr;
+}
+
+#active-header {
+    height: 3;
+    content-align: left middle;
+    border-bottom: solid $primary-darken-2;
+    padding: 0 1;
+    color: $text-muted;
+}
+
+#active-list {
+    height: auto;
+    max-height: 8;
+    border: none;
+    background: transparent;
+    padding: 0;
+}
+
+#active-list > ListItem {
+    padding: 0 1;
+    height: 1;
+}
+
+#active-list > ListItem.--highlight {
+    background: $error-darken-2;
+}
+
+#grand-total {
+    height: 3;
+    content-align: left middle;
+    border-bottom: solid $primary-darken-2;
+    padding: 0 1;
+}
+
+#report-tree {
+    height: 1fr;
+}
+
+/* ── Selected list items ─────────────────────────────────────────────────── */
+
+/* ── Bulk-edit modal ─────────────────────────────────────────────────────── */
+
+BulkEditModal {
+    align: center middle;
+}
+
+BulkEditModal #bulk-dialog {
+    background: $surface;
+    border: tall $primary;
+    width: 70;
+    height: auto;
+    max-height: 90%;
+    padding: 1 2;
+}
+
+BulkEditModal #bulk-title {
+    text-align: center;
+    text-style: bold;
+    margin-bottom: 0;
+    width: 1fr;
+}
+
+BulkEditModal #bulk-hint {
+    height: 1;
+    color: $text-muted;
+    margin-bottom: 1;
+    text-align: center;
+}
+
+BulkEditModal .bulk-label {
+    height: 1;
+    color: $text-muted;
+    margin-top: 1;
+}
+
+BulkEditModal Input {
+    margin-top: 0;
+    width: 1fr;
+}
+
+BulkEditModal #bulk-error {
+    height: 1;
+    margin-top: 1;
+}
+
+BulkEditModal #bulk-buttons {
+    margin-top: 1;
+    height: auto;
+    align: center middle;
+}
+
+BulkEditModal Button {
+    margin: 0 1;
+}
+
+/* ── Search modal ────────────────────────────────────────────────────────── */
+
+SearchModal {
+    align: center middle;
+}
+
+SearchModal #search-dialog {
+    background: $surface;
+    border: tall $primary;
+    width: 120;
+    height: 80%;
+    padding: 1 2;
+}
+
+SearchModal #search-input {
+    margin-bottom: 1;
+}
+
+SearchModal #search-list {
+    height: 1fr;
+    border: none;
+}
+
+SearchModal #search-list > ListItem {
+    padding: 0 1;
+    height: 1;
+}
+
+SearchModal #search-list > ListItem.--highlight {
+    background: $accent-darken-2;
+}
+
+SearchModal #search-status {
+    height: 6;
+    padding: 0 1;
+    color: $text-muted;
+    border-top: solid $primary-darken-2;
+    margin-top: 1;
+}
+
+/* ── Filter modal ────────────────────────────────────────────────────────── */
+
+FilterModal {
+    align: center middle;
+}
+
+FilterModal #filter-dialog {
+    background: $surface;
+    border: tall $primary;
+    width: 110;
+    height: auto;
+    max-height: 90%;
+    padding: 1 2;
+}
+
+FilterModal #filter-title {
+    text-align: center;
+    text-style: bold;
+    margin-bottom: 1;
+    width: 1fr;
+}
+
+FilterModal #filter-main {
+    height: auto;
+}
+
+FilterModal #filter-inputs {
+    width: 1fr;
+    height: auto;
+}
+
+FilterModal .filter-label {
+    color: $text-muted;
+    margin-top: 1;
+}
+
+FilterModal Input {
+    margin-bottom: 0;
+}
+
+FilterModal #filter-sugg-col {
+    width: 48;
+    border-left: vkey $primary-darken-2;
+    padding: 0 0 0 1;
+    height: auto;
+}
+
+FilterModal #filter-sugg-title {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+FilterModal #filter-sugg-list {
+    height: auto;
+    max-height: 20;
+    border: none;
+    padding: 0;
+}
+
+FilterModal #filter-buttons {
+    margin-top: 1;
+    height: auto;
+    align: center middle;
+}
+
+/* ── Grouping modal ──────────────────────────────────────────────────────── */
+
+GroupingModal {
+    align: center middle;
+}
+
+GroupingModal #grouping-dialog {
+    background: $surface;
+    border: tall $primary;
+    width: 36;
+    height: auto;
+    padding: 1 2;
+}
+
+GroupingModal #grouping-title {
+    text-align: center;
+    text-style: bold;
+    margin-bottom: 1;
+    width: 1fr;
+}
+
+GroupingModal Checkbox {
+    margin-bottom: 0;
+    background: transparent;
+}
+
+GroupingModal #grouping-buttons {
+    margin-top: 1;
+    height: auto;
+    align: center middle;
+}
+
+GroupingModal Button {
+    margin: 0 1;
+}
+
+/* ── Entry modal ─────────────────────────────────────────────────────────── */
+
+EntryModal {
+    align: center middle;
+}
+
+EntryModal #dialog {
+    background: $surface;
+    border: tall $primary;
+    width: 155;
+    height: auto;
+    max-height: 98%;
+}
+
+EntryModal #form-col {
+    padding: 1 2;
+    width: 1fr;
+    height: auto;
+}
+
+EntryModal #form-wrapper {
+    width: 1fr;
+    height: auto;
+}
+
+EntryModal #form-columns {
+    height: auto;
+    width: 1fr;
+}
+
+EntryModal #primary-col,
+EntryModal #details-col {
+    width: 1fr;
+    height: auto;
+}
+
+EntryModal #primary-col {
+    padding-right: 2;
+}
+
+EntryModal #recents-col {
+    width: 34;
+    padding: 1 1;
+    border-left: solid $primary-darken-2;
+    background: $surface-darken-1;
+    height: auto;
+}
+
+EntryModal #recents-title {
+    text-style: bold;
+    color: $text-muted;
+    margin-bottom: 1;
+    height: 1;
+}
+
+EntryModal #recents-list {
+    height: auto;
+    border: none;
+    background: transparent;
+    padding: 0;
+}
+
+EntryModal #recents-list > ListItem {
+    padding: 0 1;
+    height: 1;
+}
+
+EntryModal #recents-list > ListItem.--highlight {
+    background: $accent-darken-2;
+}
+
+EntryModal #modal-title {
+    text-align: center;
+    text-style: bold;
+    margin-bottom: 1;
+    width: 1fr;
+}
+
+EntryModal #form-col Label {
+    margin-top: 1;
+    color: $text-muted;
+}
+
+EntryModal #primary-col Label,
+EntryModal #details-col Label {
+    margin-top: 1;
+    color: $text-muted;
+}
+
+EntryModal Input {
+    margin-top: 0;
+}
+
+EntryModal Input.mixed-field {
+    border: tall $warning-darken-2;
+    color: $text-muted;
+}
+
+EntryModal #error-msg {
+    margin-top: 1;
+    height: 1;
+}
+
+EntryModal #start-row,
+EntryModal #end-row {
+    height: auto;
+}
+
+EntryModal #start-row Input,
+EntryModal #end-row Input {
+    width: 1fr;
+}
+
+EntryModal #start-row #start-date,
+EntryModal #end-row #end-date {
+    max-width: 18;
+}
+
+EntryModal #tz-row {
+    height: auto;
+    margin-top: 1;
+}
+
+EntryModal #tz-row Input {
+    max-width: 12;
+}
+
+EntryModal #ticket-row {
+    height: auto;
+}
+
+EntryModal #ticket-row Input {
+    width: 1fr;
+}
+
+EntryModal #ticket-browse {
+    width: auto;
+    margin-left: 1;
+}
+
+EntryModal #buttons {
+    margin-top: 1;
+    height: auto;
+    align: center middle;
+}
+
+EntryModal Button {
+    margin: 0 1;
+}
+
+/* ── Ticket picker modal ─────────────────────────────────────────────────── */
+
+TicketPickerModal {
+    align: center middle;
+}
+
+TicketPickerModal > Vertical {
+    background: $surface;
+    border: tall $primary;
+    padding: 1 2;
+    width: 90;
+    height: auto;
+    max-height: 98%;
+}
+
+TicketPickerModal #picker-title {
+    text-align: center;
+    text-style: bold;
+    margin-bottom: 1;
+    width: 1fr;
+}
+
+/* repo row: Host / Owner / Repo */
+TicketPickerModal #picker-repo-row {
+    height: auto;
+    margin-bottom: 1;
+    align: left middle;
+}
+
+TicketPickerModal .picker-field {
+    height: auto;
+    width: auto;
+}
+
+TicketPickerModal .picker-field Label {
+    height: 1;
+    color: $text-muted;
+    margin-bottom: 0;
+}
+
+TicketPickerModal #picker-host  { width: 20; }
+TicketPickerModal #picker-owner { width: 20; }
+TicketPickerModal #picker-repo  { width: 20; }
+
+TicketPickerModal .picker-sep {
+    width: 3;
+    height: 3;
+    content-align: center middle;
+    text-align: center;
+    color: $text-muted;
+    padding-top: 1;
+}
+
+/* query row */
+TicketPickerModal #picker-search-row {
+    height: auto;
+    margin-bottom: 1;
+}
+
+TicketPickerModal #picker-query {
+    width: 1fr;
+}
+
+TicketPickerModal #picker-toggle-closed {
+    width: auto;
+    margin-left: 1;
+}
+
+TicketPickerModal #picker-list {
+    height: 1fr;
+}
+
+TicketPickerModal #picker-status {
+    height: 1;
+    margin-top: 1;
+    color: $text-muted;
+}
+
+/* ── Copy to backend modal ───────────────────────────────────────────────── */
+
+CopyToBackendModal {
+    align: center middle;
+}
+
+CopyToBackendModal #copy-dialog {
+    background: $surface;
+    border: tall $primary;
+    width: 60;
+    height: auto;
+    padding: 1 2;
+}
+
+CopyToBackendModal #copy-title {
+    text-align: center;
+    text-style: bold;
+    margin-bottom: 1;
+    width: 1fr;
+}
+
+CopyToBackendModal Label {
+    height: 1;
+    color: $text-muted;
+    margin-top: 1;
+}
+
+CopyToBackendModal Select {
+    margin-top: 0;
+    width: 1fr;
+}
+
+CopyToBackendModal Input {
+    margin-top: 0;
+    width: 1fr;
+}
+
+CopyToBackendModal #copy-status {
+    height: 1;
+    margin-top: 1;
+}
+
+CopyToBackendModal #copy-buttons {
+    margin-top: 1;
+    height: auto;
+    align: center middle;
+}
+
+CopyToBackendModal Button {
+    margin: 0 1;
+}
+
+/* ── About modal ─────────────────────────────────────────────────────────── */
+
+AboutModal {
+    align: center middle;
+}
+
+AboutModal #about-dialog {
+    background: $surface;
+    border: tall $primary;
+    width: 90;
+    max-width: 100%;
+    height: auto;
+    padding: 1 2;
+}
+
+AboutModal #about-title {
+    text-align: center;
+    text-style: bold;
+    margin-bottom: 1;
+    width: 1fr;
+}
+
+AboutModal #about-scroll {
+    height: auto;
+    max-height: 80vh;
+}
+
+AboutModal #about-content {
+    width: auto;
+    height: auto;
+    padding: 0 1;
+}
+
+AboutModal #about-close {
+    margin-top: 1;
+    width: 1fr;
+}
+
+/* ── Help modal ──────────────────────────────────────────────────────────── */
+
+HelpModal {
+    align: center middle;
+}
+
+HelpModal #help-dialog {
+    background: $surface;
+    border: tall $primary;
+    width: 56;
+    height: auto;
+    max-height: 38;
+    padding: 1 2;
+}
+
+HelpModal #help-dialog.help-wide {
+    width: 110;
+}
+
+HelpModal #help-title {
+    text-align: center;
+    text-style: bold;
+    margin-bottom: 1;
+    width: 1fr;
+}
+
+HelpModal #help-content {
+    height: auto;
+    padding: 0 1;
+}
+
+HelpModal #help-columns {
+    height: auto;
+}
+
+HelpModal .help-col {
+    height: auto;
+    width: 1fr;
+    padding: 0 1;
+}
+
+HelpModal #help-close {
+    margin-top: 1;
+    width: 1fr;
+}
+
+/* ── Date picker calendar ────────────────────────────────────────────── */
+
+DatePickerModal {
+    align: center middle;
+}
+
+DatePickerModal > Vertical {
+    background: $surface;
+    border: tall $primary;
+    padding: 1 2;
+    width: 52;
+    height: auto;
+}
+
+#cal-header {
+    height: 1;
+    margin-bottom: 1;
+    align: center middle;
+}
+
+.cal-nav {
+    width: 3;
+    min-width: 3;
+    height: 1;
+    padding: 0;
+    border: none;
+}
+
+#cal-month-label {
+    width: 1fr;
+    text-align: center;
+    content-align: center middle;
+    text-style: bold;
+}
+
+#cal-dow {
+    height: 1;
+}
+
+.cal-dow {
+    width: 4;
+    text-align: center;
+    content-align: center middle;
+    color: $text-muted;
+    text-style: bold;
+}
+
+#cal-grid {
+    height: auto;
+    margin-top: 0;
+    margin-bottom: 1;
+}
+
+.cal-week {
+    height: 1;
+}
+
+.cal-day {
+    width: 4;
+    min-width: 4;
+    height: 1;
+    min-height: 1;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: $text;
+}
+
+.cal-day:hover {
+    background: $accent-darken-1;
+    color: $text;
+}
+
+.cal-today {
+    color: $warning;
+    text-style: bold;
+}
+
+.cal-range-end {
+    background: $primary;
+    color: $text;
+    text-style: bold;
+}
+
+.cal-range-mid {
+    background: $primary-darken-2;
+    color: $text;
+}
+
+#cal-status {
+    height: 1;
+    margin-top: 1;
+    margin-bottom: 1;
+    text-align: center;
+    content-align: center middle;
+    color: $text-muted;
+}
+
+.cal-empty {
+    width: 4;
+    height: 1;
+}
+
+#cal-quick {
+    height: auto;
+    margin-bottom: 1;
+    align: center middle;
+}
+
+#cal-quick Button {
+    height: 1;
+    padding: 0 1;
+    border: none;
+    margin: 0 1;
+}
+
+#cal-footer {
+    height: auto;
+    align: right middle;
+}
+
+#cal-footer Button {
+    margin: 0 1;
+}
