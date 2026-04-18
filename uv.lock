@@ -548,6 +548,51 @@ wheels = [
 ]
 
 [[package]]
+name = "listcrawler-time-tracker"
+source = { editable = "." }
+dependencies = [
+    { name = "pydantic" },
+    { name = "textual" },
+]
+
+[package.optional-dependencies]
+github = [
+    { name = "pygithub" },
+]
+postgres = [
+    { name = "keyring" },
+    { name = "psycopg2-binary" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "debugpy" },
+    { name = "mypy" },
+    { name = "pygithub" },
+    { name = "ruff" },
+    { name = "textual-dev" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "keyring", marker = "extra == 'postgres'", specifier = ">=25.0" },
+    { name = "psycopg2-binary", marker = "extra == 'postgres'", specifier = ">=2.9" },
+    { name = "pydantic", specifier = ">=2.11.5" },
+    { name = "pygithub", marker = "extra == 'github'", specifier = ">=2.0" },
+    { name = "textual", specifier = ">=3.2.0" },
+]
+provides-extras = ["github", "postgres"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "debugpy", specifier = ">=1.8.14" },
+    { name = "mypy", specifier = ">=1.15" },
+    { name = "pygithub", specifier = ">=2.0" },
+    { name = "ruff", specifier = ">=0.11" },
+    { name = "textual-dev", specifier = ">=1.7.0" },
+]
+
+[[package]]
 name = "markdown-it-py"
 version = "3.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1154,52 +1199,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/27/41/09d5695b050d592ff58422be2ca5c9915787f59ff576ca91d9541d315406/textual_serve-1.1.2.tar.gz", hash = "sha256:0ccaf9b9df9c08d4b2d7a0887cad3272243ba87f68192c364f4bed5b683e4bd4", size = 892959, upload-time = "2025-04-16T12:11:41.746Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7c/fb/0006f86960ab8a2f69c9f496db657992000547f94f53a2f483fd611b4bd2/textual_serve-1.1.2-py3-none-any.whl", hash = "sha256:147d56b165dccf2f387203fe58d43ce98ccad34003fe3d38e6d2bc8903861865", size = 447326, upload-time = "2025-04-16T12:11:43.176Z" },
-]
-
-[[package]]
-name = "time-tracker"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "pydantic" },
-    { name = "textual" },
-]
-
-[package.optional-dependencies]
-github = [
-    { name = "pygithub" },
-]
-postgres = [
-    { name = "keyring" },
-    { name = "psycopg2-binary" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "debugpy" },
-    { name = "mypy" },
-    { name = "pygithub" },
-    { name = "ruff" },
-    { name = "textual-dev" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "keyring", marker = "extra == 'postgres'", specifier = ">=25.0" },
-    { name = "psycopg2-binary", marker = "extra == 'postgres'", specifier = ">=2.9" },
-    { name = "pydantic", specifier = ">=2.11.5" },
-    { name = "pygithub", marker = "extra == 'github'", specifier = ">=2.0" },
-    { name = "textual", specifier = ">=3.2.0" },
-]
-provides-extras = ["postgres", "github"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "debugpy", specifier = ">=1.8.14" },
-    { name = "mypy", specifier = ">=1.15" },
-    { name = "pygithub", specifier = ">=2.0" },
-    { name = "ruff", specifier = ">=0.11" },
-    { name = "textual-dev", specifier = ">=1.7.0" },
 ]
 
 [[package]]
