@@ -11,6 +11,25 @@ from ..models import Entry, Tag
 from .base import StorageBackend
 
 
+def _entry_sort_key(e: Entry) -> tuple:
+    def _dt(v: datetime | None) -> tuple[int, datetime]:
+        return (0, v) if v is not None else (-1, datetime.min.replace(tzinfo=UTC))
+
+    def _s(v: str | None) -> tuple[int, str]:
+        return (0, v) if v is not None else (-1, "")
+
+    return (
+        _dt(e.start),
+        _dt(e.end),
+        _s(e.customer),
+        _s(e.project),
+        _s(e.description),
+        _s(e.ticket),
+        _s(e.ticket_url),
+        sorted(t.name for t in e.tags) if e.tags else [],
+    )
+
+
 class JsonBackend(StorageBackend):
     """Stores all entries in a single JSON file."""
 
@@ -31,6 +50,7 @@ class JsonBackend(StorageBackend):
         return self
 
     def __exit__(self, *_: object) -> None:
+        self._db.entries.sort(key=_entry_sort_key)
         self.path.write_text(self._db.model_dump_json(indent=4))
 
     # ------------------------------------------------------------------

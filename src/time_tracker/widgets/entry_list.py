@@ -19,6 +19,16 @@ from .common import (
     group_entries,
 )
 
+
+def _day_total_secs(entries: list[DBEntry]) -> int:
+    from datetime import UTC, datetime as _dt
+    total = 0
+    for e in entries:
+        if e.start:
+            end = e.end or _dt.now(UTC)
+            total += max(0, int((end - e.start).total_seconds()))
+    return total
+
 # ── Column widths (visual characters) ────────────────────────────────────────
 _W_START = 11  # "MM-DD HH:MM"
 _W_END = 11
@@ -54,6 +64,7 @@ def _trunc(s: str, width: int) -> str:
 @dataclass
 class DayHeader:
     day: date
+    entries: list[DBEntry] = dc_field(default_factory=list)
 
 
 @dataclass
@@ -125,15 +136,19 @@ class DayItem(ListItem):
     DayItem > Label { width: 1fr; text-style: bold; }
     """
 
-    def __init__(self, day: date) -> None:
+    def __init__(self, day: date, entries: list[DBEntry] | None = None) -> None:
         super().__init__(disabled=True)
         self._day = day
+        self._entries = entries or []
 
     def compose(self) -> ComposeResult:
         if self._day == date.today():
             label = self._day.strftime("Today, %B %d, %Y")
         else:
             label = self._day.strftime("%A, %B %d, %Y")
+        if self._entries:
+            total = _day_total_secs(self._entries)
+            label += f"  [dim]{fmt_duration(total)}[/dim]"
         yield Label(label)
 
 
@@ -432,11 +447,10 @@ class WeekItem(ListItem):
             for e in self._header.entries
             if e.start and e.end
         )
-        n = len(self._header.entries)
         indicator = "▶" if self._collapsed else "▼"
         label = (
             f"{indicator} Week {ws.strftime('%b %d')} – {we.strftime('%b %d')}  "
-            f"({n} {'entry' if n == 1 else 'entries'}, {fmt_duration(total)})"
+            f"{fmt_duration(total)}"
         )
         yield Label(label)
 
@@ -466,11 +480,10 @@ class MonthItem(ListItem):
             for e in self._header.entries
             if e.start and e.end
         )
-        n = len(self._header.entries)
         indicator = "▶" if self._collapsed else "▼"
         label = (
             f"{indicator} {month_label}  "
-            f"({n} {'entry' if n == 1 else 'entries'}, {fmt_duration(total)})"
+            f"{fmt_duration(total)}"
         )
         yield Label(label)
 
