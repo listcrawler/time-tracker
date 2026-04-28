@@ -25,6 +25,12 @@ class GitHubProvider(TicketProvider):
         default_repo: str | None = None,
     ) -> None:
         super().__init__()
+        # Strip any accidental scheme prefix (e.g. "https://my.ghe.com" → "my.ghe.com")
+        for _scheme in ("https://", "http://"):
+            if host.startswith(_scheme):
+                host = host[len(_scheme):]
+                break
+        host = host.rstrip("/")
         self._host = host
         self._default_owner = default_owner or ""
         self._default_repo = default_repo or ""

@@ -1,13 +1,16 @@
 [project]
-name = "time-tracker"
-version = "0.1.0"
-description = "Terminal time tracker with JSON, SQLite, and PostgreSQL backends"
+name = "listcrawler-time-tracker"
+dynamic = ["version"]
+description = "Terminal time tracker with JSON, SQLite, and PostgreSQL backends and github issues integration."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2.11.5",
     "textual>=3.2.0",
 ]
+
+[project.urls]
+Repository = "https://github.com/listcrawler/time-tracker"
 
 [project.optional-dependencies]
 postgres = ["psycopg2-binary>=2.9", "keyring>=25.0"]
@@ -16,8 +19,14 @@ github   = ["PyGithub>=2.0"]
 [project.scripts]
 time-tracker = "time_tracker:main"
 
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/time_tracker"]
+
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [dependency-groups]

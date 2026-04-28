@@ -109,6 +109,14 @@ class RowsMixin:
             if e.start and e.end and e.start.date() != e.end.date():
                 cross_by_end.setdefault(e.end.date(), []).append(e)
 
+        # Entries grouped by date (for day header duration totals)
+        entries_by_day: dict[date, list[DBEntry]] = {}
+        for e in completed:
+            if e.start:
+                entries_by_day.setdefault(e.start.date(), []).append(e)
+        if current and current.start:
+            entries_by_day.setdefault(current.start.date(), []).append(current)
+
         # Most-recent date for the top day header (scoped to recent / current)
         top_date: date | None = None
         if current and current.start:
@@ -124,7 +132,7 @@ class RowsMixin:
 
         # Top day header
         if top_date is not None:
-            rows.append(DayHeader(day=top_date))
+            rows.append(DayHeader(day=top_date, entries=entries_by_day.get(top_date, [])))
 
         # Helper: emit groups and cross-date markers for a single day
         def _emit_day(day: date, day_entries: list[DBEntry]) -> None:
@@ -147,7 +155,7 @@ class RowsMixin:
             if day == top_date:
                 top_date_visited = True
             else:
-                rows.append(DayHeader(day=day))
+                rows.append(DayHeader(day=day, entries=entries_by_day.get(day, [])))
             _emit_day(day, list(day_iter))
 
         # Cross-date end lines for top_date when it has no completed entries
@@ -165,7 +173,7 @@ class RowsMixin:
             rows.append(WeekHeader(week_start=week_start, entries=week_entries))
             if week_start not in self._collapsed_weeks:
                 for day, day_iter in groupby(week_entries, key=_start_date):
-                    rows.append(DayHeader(day=day))
+                    rows.append(DayHeader(day=day, entries=entries_by_day.get(day, [])))
                     _emit_day(day, list(day_iter))
 
         # ── Monthly: month-header rows (older than 4 weeks) ──────────────────
@@ -182,7 +190,7 @@ class RowsMixin:
                     rows.append(WeekHeader(week_start=week_start, entries=week_entries_m))
                     if week_start not in self._collapsed_weeks:
                         for day, day_iter in groupby(week_entries_m, key=_start_date):
-                            rows.append(DayHeader(day=day))
+                            rows.append(DayHeader(day=day, entries=entries_by_day.get(day, [])))
                             _emit_day(day, list(day_iter))
 
         return rows
@@ -258,8 +266,10 @@ class RowsMixin:
                 self._collapsed.update(
                     (r.day, r.key) for r in self._rows if isinstance(r, GroupHeader)
                 )
+                current_monday = date.today() - timedelta(days=date.today().weekday())
                 self._collapsed_weeks.update(
-                    r.week_start for r in self._rows if isinstance(r, WeekHeader)
+                    r.week_start for r in self._rows
+                    if isinstance(r, WeekHeader) and r.week_start != current_monday
                 )
                 self._collapsed_months.update(
                     (r.year, r.month) for r in self._rows if isinstance(r, MonthHeader)
@@ -293,7 +303,7 @@ class RowsMixin:
         items: list[ListItem] = []
         for row in self._rows:
             if isinstance(row, DayHeader):
-                items.append(DayItem(row.day))
+                items.append(DayItem(row.day, row.entries))
             elif isinstance(row, WeekHeader):
                 items.append(WeekItem(row, collapsed=row.week_start in self._collapsed_weeks))
             elif isinstance(row, MonthHeader):

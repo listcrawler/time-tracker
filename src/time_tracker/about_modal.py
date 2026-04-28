@@ -9,7 +9,7 @@ from textual.containers import HorizontalScroll, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, Label, Static
 
-from .config import Config, GitHubAccount
+from .config import CONFIG_PATH, Config, GitHubAccount
 
 
 def _redact_token(token: str | None) -> str:
@@ -67,6 +67,12 @@ def _row(label: str, value: str) -> str:
 def _build_content(config: Config) -> str:
     sep = f"[dim]{'─' * 40}[/dim]"
     lines: list[str] = []
+
+    # ── Config file ──────────────────────────────────────────────────────────
+    lines.append("[bold]Config[/bold]")
+    lines.append(sep)
+    lines.append(_row("File", str(CONFIG_PATH)))
+    lines.append("")
 
     # ── Backend ──────────────────────────────────────────────────────────────
     lines.append("[bold]Backend[/bold]")

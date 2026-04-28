@@ -44,15 +44,9 @@ class TimeTrackerApp(FilterMixin, TimelineMixin, RowsMixin, App[None]):
         Binding("C", "continue_entry_with_edit", "Continue+Edit", show=False),
         Binding("d", "delete_entry", "Delete"),
         Binding("left", "collapse_group", "Collapse", show=False),
-        Binding("h", "h_key", "Collapse/Earlier", show=False),
         Binding("right", "expand_group", "Expand", show=False),
-        Binding("l", "l_key", "Expand/Later", show=False),
-        Binding("H", "end_earlier", "End−", show=False),
         Binding("shift+left", "end_earlier", "End−", show=False),
-        Binding("L", "end_later", "End+", show=False),
         Binding("shift+right", "end_later", "End+", show=False),
-        Binding("j", "cursor_down", "Down", show=False),
-        Binding("k", "cursor_up", "Up", show=False),
         Binding("home", "cursor_first", "Top", show=False),
         Binding("end", "cursor_last", "Bottom", show=False),
         Binding("a", "align_entry", "Align", show=False),
@@ -227,18 +221,6 @@ class TimeTrackerApp(FilterMixin, TimelineMixin, RowsMixin, App[None]):
             lv = lvs.first()
             lv.index = len(lv) - 1
 
-    def action_h_key(self) -> None:
-        if self._timeline_mode:
-            self._move_start(-1)
-        else:
-            self.action_collapse_group()
-
-    def action_l_key(self) -> None:
-        if self._timeline_mode:
-            self._move_start(+1)
-        else:
-            self.action_expand_group()
-
     def action_end_earlier(self) -> None:
         if self._timeline_mode:
             self._move_end(-1)
@@ -252,6 +234,9 @@ class TimeTrackerApp(FilterMixin, TimelineMixin, RowsMixin, App[None]):
             self.action_expand_all()
 
     def action_collapse_group(self) -> None:
+        if self._timeline_mode:
+            self._move_start(-1)
+            return
         row = self._highlighted_row()
         if isinstance(row, EntryRow) and row.in_group:
             idx = self._rows.index(row)
@@ -271,6 +256,9 @@ class TimeTrackerApp(FilterMixin, TimelineMixin, RowsMixin, App[None]):
             self._refresh_list()
 
     def action_expand_group(self) -> None:
+        if self._timeline_mode:
+            self._move_start(+1)
+            return
         row = self._highlighted_row()
         if isinstance(row, GroupHeader):
             self._collapsed.discard((row.day, row.key))

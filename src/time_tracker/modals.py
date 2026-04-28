@@ -488,9 +488,33 @@ class CopyToBackendModal(ModalScreen[int | None]):
             entries = [e for e in self._db.dump_entries() if e.end is not None]
             count = 0
             with dest:
+                existing = {
+                    (
+                        e.start,
+                        e.end,
+                        e.customer,
+                        e.project,
+                        e.description,
+                        e.ticket,
+                        e.ticket_url,
+                        frozenset(t.name for t in e.tags) if e.tags else frozenset(),
+                    )
+                    for e in dest.dump_entries()
+                }
                 for entry in entries:
-                    dest.add_entry(entry)
-                    count += 1
+                    key = (
+                        entry.start,
+                        entry.end,
+                        entry.customer,
+                        entry.project,
+                        entry.description,
+                        entry.ticket,
+                        entry.ticket_url,
+                        frozenset(t.name for t in entry.tags) if entry.tags else frozenset(),
+                    )
+                    if key not in existing:
+                        dest.add_entry(entry)
+                        count += 1
             self.dismiss(count)
         except Exception as exc:
             from textual.markup import escape
@@ -535,13 +559,13 @@ class CopyToBackendModal(ModalScreen[int | None]):
 
 # ── Bulk-edit modal ───────────────────────────────────────────────────────────
 
-_NO_CHANGE = "[no change]"
+_NO_CHANGE = "[no-change]"
 
 
 class BulkEditModal(ModalScreen[dict[str, str | None] | None]):
     """Set a new value for any subset of fields across multiple entries at once.
 
-    Fields that keep the [no change] sentinel are left untouched.
+    Fields that keep the [no-change] sentinel are left untouched.
     Pressing Backspace / Delete in an empty field restores the sentinel.
     """
 
@@ -574,7 +598,7 @@ class BulkEditModal(ModalScreen[dict[str, str | None] | None]):
                 id="bulk-title",
             )
             yield Label(
-                "Leave [dim][no change][/dim] to keep each entry's existing value.",
+                "Leave [dim][no-change][/dim] to keep each entry's existing value.",
                 id="bulk-hint",
             )
             for key, label in self._FIELDS:
@@ -599,7 +623,7 @@ class BulkEditModal(ModalScreen[dict[str, str | None] | None]):
             return
         val = focused.value
         if val == _NO_CHANGE:
-            if event.character is not None:
+            if event.character is not None and event.character.isprintable():
                 # Printable key: clear sentinel so the character lands in an empty field
                 focused.value = ""
                 focused.cursor_position = 0
@@ -752,19 +776,22 @@ def _fuzzy_score(query: str, text: str) -> int:
 class SearchModal(ModalScreen[tuple[str, DBEntry | list[DBEntry]] | None]):
     """Fuzzy search across entry descriptions and tags.
 
-    Type to filter.  Ctrl+J / Ctrl+K or ↑ / ↓ navigate results.
+    Type to filter.  ↑ / ↓ navigate results.
     Enter selects.  Escape cancels.
+    → / ← expands or collapses a multi-entry group.
     Tab moves focus to the result list to unlock action keys:
     e  edit    c  continue    C  continue+edit    d  delete    o  open ticket
-    Ctrl+Space toggles selection.  E bulk-edits selected (or all) results.
+    Space toggles selection.  E bulk-edits selected (or all) results.
     """
 
     BINDINGS = [
         Binding("escape", "cancel", "Cancel", show=False, priority=True),
-        Binding("ctrl+j", "cursor_down", "Down", show=False, priority=True),
-        Binding("ctrl+k", "cursor_up", "Up", show=False, priority=True),
         Binding("up", "cursor_up", "Up", show=False, priority=True),
         Binding("down", "cursor_down", "Down", show=False, priority=True),
+        Binding("right", "expand", "Expand", show=False, priority=True),
+        Binding("left", "collapse", "Collapse", show=False, priority=True),
+        Binding("shift+right", "expand_all", "Expand all", show=False, priority=True),
+        Binding("shift+left", "collapse_all", "Collapse all", show=False, priority=True),
         Binding("space", "toggle_select", "Select", show=False, priority=True),
         # Action keys — non-priority: fire when the list (not Input) has focus.
         Binding("e", "act_edit", "Edit", show=False),
@@ -775,15 +802,21 @@ class SearchModal(ModalScreen[tuple[str, DBEntry | list[DBEntry]] | None]):
         Binding("E", "act_bulk_edit", "Bulk edit", show=False),
     ]
 
+    # Each display row maps to (group_idx, entry_idx_within_group | None).
+    # None = collapsed group header; int = individual entry in expanded group.
+    _DisplayKey = tuple[int, int | None]
+
     def __init__(self, entries: list[DBEntry]) -> None:
         super().__init__()
         self._all_entries = entries
-        self._results: list[DBEntry] = []
-        self._selected: set[int] = set()  # indices into self._results
+        self._results: list[list[DBEntry]] = []  # each sublist = collapsed group
+        self._expanded: set[int] = set()          # group indices that are expanded
+        self._display: list[SearchModal._DisplayKey] = []  # flat rendered list
+        self._selected: set[SearchModal._DisplayKey] = set()
 
     def compose(self) -> ComposeResult:
         with Vertical(id="search-dialog"):
-            yield Input(placeholder="Search descriptions  $ customer  @ project  # tag  & ticket", id="search-input")
+            yield Input(placeholder='Search descriptions  $ customer  @ project  # tag  & ticket  "exact phrase"', id="search-input")
             yield ListView(id="search-list")
             yield Static("", id="search-status")
 
@@ -794,7 +827,6 @@ class SearchModal(ModalScreen[tuple[str, DBEntry | list[DBEntry]] | None]):
     @on(Input.Changed, "#search-input")
     def _on_query_changed(self, event: Input.Changed) -> None:
         self._update_results(event.value)
-
 
     # ── Scoring ───────────────────────────────────────────────────────────
 
@@ -820,6 +852,18 @@ class SearchModal(ModalScreen[tuple[str, DBEntry | list[DBEntry]] | None]):
             total += s
         return total
 
+    # ── Group key ─────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _group_key(entry: DBEntry) -> tuple:
+        return (
+            entry.customer or "",
+            entry.project or "",
+            entry.description or "",
+            entry.ticket or "",
+            frozenset(t.name for t in (entry.tags or [])),
+        )
+
     # ── Results update ────────────────────────────────────────────────────
 
     def _update_results(self, query: str) -> None:
@@ -831,53 +875,101 @@ class SearchModal(ModalScreen[tuple[str, DBEntry | list[DBEntry]] | None]):
                 ts = entry.start.timestamp() if entry.start else 0.0
                 scored.append((score, ts, entry))
         scored.sort(key=lambda x: (-x[0], -x[1]))
-        self._results = [e for _, _, e in scored[:50]]
+
+        # Group by identical key; preserve rank order of first occurrence.
+        seen: dict[tuple, list[DBEntry]] = {}
+        for _, _, entry in scored[:500]:
+            key = self._group_key(entry)
+            seen.setdefault(key, []).append(entry)
+        self._results = list(seen.values())[:50]
+        self._expanded.clear()
         self._selected.clear()
 
-        # Single match — select immediately without extra keypress.
-        if len(self._results) == 1 and q:
-            self.dismiss(("focus", self._results[0]))
-            return
-
         self._rebuild_list()
-        # No auto-highlight — first Ctrl+J highlights first, Ctrl+K highlights last.
         self.query_one("#search-list", ListView).index = None
         self._update_status()
 
-    def _rebuild_list(self, *, preserve_index: bool = False) -> None:
-        """Rebuild the results list, reflecting current selection state."""
+    def _build_display(self) -> None:
+        self._display = []
+        for gi, group in enumerate(self._results):
+            self._display.append((gi, None))
+            if gi in self._expanded:
+                for ei in range(len(group)):
+                    self._display.append((gi, ei))
+
+    def _rebuild_list(self) -> None:
+        """Full list rebuild — used when the result set changes (new query)."""
+        self._build_display()
         lv = self.query_one("#search-list", ListView)
-        old_index = lv.index if preserve_index else None
         lv.clear()
-        for i, entry in enumerate(self._results):
-            marker = "[cyan]◉[/cyan] " if i in self._selected else "  "
-            lv.append(ListItem(Static(marker + self._entry_label(entry))))
-        if old_index is not None:
-            lv.index = min(old_index, len(self._results) - 1) if self._results else None
+        for gi, ei in self._display:
+            lv.append(ListItem(Static(self._item_label(gi, ei))))
 
     @staticmethod
-    def _entry_label(entry: DBEntry) -> str:
+    def _entry_label(entry: DBEntry, count: int = 1, *, expanded: bool = False) -> str:
         from rich.markup import escape
 
+        arrow = "[dim]▼[/dim] " if (count > 1 and expanded) else "[dim]▶[/dim] " if count > 1 else "  "
         parts: list[str] = []
         if entry.start:
             parts.append(_format_dt(entry.start, "%Y-%m-%d"))
         ctx = "/".join(p for p in [entry.customer, entry.project] if p)
         if ctx:
-            parts.append(escape(f"[{ctx}]"))
+            # rich.markup.escape misses uppercase-initial tags; use \[ literal instead.
+            parts.append(f"\\[{escape(ctx)}]")
         if entry.description:
             parts.append(escape(entry.description))
         if entry.tags:
             parts.append("  ".join(f"#{escape(t.name)}" for t in entry.tags))
-        return "  ".join(parts) if parts else "(no description)"
+        label = "  ".join(parts) if parts else "(no description)"
+        return arrow + label
+
+    @staticmethod
+    def _sub_entry_label(entry: DBEntry) -> str:
+        parts: list[str] = ["  "]  # indent
+        if entry.start:
+            parts.append(_format_dt(entry.start, "%Y-%m-%d %H:%M"))
+        if entry.end:
+            parts.append(f"→ {_format_dt(entry.end, '%H:%M')}")
+            if entry.start:
+                secs = int((entry.end - entry.start).total_seconds())
+                parts.append(f"[dim]({fmt_duration(secs)})[/dim]")
+        elif entry.start:
+            parts.append("→ running…")
+        return "  ".join(parts)
+
+    # ── Item label ────────────────────────────────────────────────────────
+
+    def _list_items(self) -> list:
+        return list(self.query_one("#search-list", ListView).query(ListItem))
+
+    def _item_label(self, gi: int, ei: int | None) -> str:
+        group = self._results[gi]
+        marker = "[cyan]◉[/cyan] " if (gi, ei) in self._selected else "  "
+        if ei is None:
+            return marker + self._entry_label(group[0], len(group), expanded=gi in self._expanded)
+        return marker + self._sub_entry_label(group[ei])
+
+    def _update_item_label(self, di: int, gi: int, ei: int | None) -> None:
+        items = self._list_items()
+        if 0 <= di < len(items):
+            items[di].query_one(Static).update(self._item_label(gi, ei))
 
     # ── Status panel ──────────────────────────────────────────────────────
 
-    def _highlighted_entry(self) -> DBEntry | None:
+    def _highlighted_display_key(self) -> SearchModal._DisplayKey | None:
         lv = self.query_one("#search-list", ListView)
-        if lv.index is not None and 0 <= lv.index < len(self._results):
-            return self._results[lv.index]
+        if lv.index is not None and 0 <= lv.index < len(self._display):
+            return self._display[lv.index]
         return None
+
+    def _highlighted_entry(self) -> DBEntry | None:
+        key = self._highlighted_display_key()
+        if key is None:
+            return None
+        gi, ei = key
+        group = self._results[gi]
+        return group[ei] if ei is not None else group[0]
 
     def on_list_view_highlighted(self, _: ListView.Highlighted) -> None:
         self._update_status()
@@ -913,27 +1005,144 @@ class SearchModal(ModalScreen[tuple[str, DBEntry | list[DBEntry]] | None]):
         line6 = "  ".join(p for p in [tags_part, sel_part] if p)
         panel.update("\n".join([line1, line2, line3, line4, line5, line6]))
 
+    # ── Expand / collapse ─────────────────────────────────────────────────
+
+    def action_expand(self) -> None:
+        dk = self._highlighted_display_key()
+        if dk is None:
+            return
+        gi, ei = dk
+        if ei is not None or len(self._results[gi]) <= 1 or gi in self._expanded:
+            return
+
+        lv = self.query_one("#search-list", ListView)
+        header_di = lv.index
+        header_item = self._list_items()[header_di]
+
+        self._expanded.add(gi)
+        self._build_display()
+
+        header_item.query_one(Static).update(self._item_label(gi, None))
+        group = self._results[gi]
+        new_items = [ListItem(Static(self._item_label(gi, sub_ei))) for sub_ei in range(len(group))]
+        lv.mount(*new_items, after=header_item)
+        self._update_status()
+
+    def action_collapse(self) -> None:
+        dk = self._highlighted_display_key()
+        if dk is None:
+            return
+        gi, ei = dk
+        if gi not in self._expanded:
+            return
+
+        lv = self.query_one("#search-list", ListView)
+        items = self._list_items()
+        header_di = next(i for i, d in enumerate(self._display) if d == (gi, None))
+        sub_dis = [i for i, d in enumerate(self._display) if d[0] == gi and d[1] is not None]
+
+        self._expanded.discard(gi)
+        self._build_display()
+
+        lv.index = header_di
+        items[header_di].query_one(Static).update(self._item_label(gi, None))
+        for sub_di in reversed(sub_dis):
+            items[sub_di].remove()
+
+        self._update_status()
+
+    def action_expand_all(self) -> None:
+        expandable = [gi for gi, g in enumerate(self._results) if len(g) > 1 and gi not in self._expanded]
+        if not expandable:
+            return
+        lv = self.query_one("#search-list", ListView)
+        current_dk = self._highlighted_display_key()
+
+        lv.index = None
+        header_pos = {gi: next(i for i, d in enumerate(self._display) if d == (gi, None)) for gi in expandable}
+        all_items = self._list_items()
+
+        for gi in sorted(expandable, key=lambda g: header_pos[g], reverse=True):
+            header_item = all_items[header_pos[gi]]
+            self._expanded.add(gi)
+            self._build_display()
+            header_item.query_one(Static).update(self._item_label(gi, None))
+            group = self._results[gi]
+            new_items = [ListItem(Static(self._item_label(gi, sub_ei))) for sub_ei in range(len(group))]
+            lv.mount(*new_items, after=header_item)
+
+        if current_dk is not None:
+            restore_di = next((i for i, d in enumerate(self._display) if d == current_dk), None)
+            if restore_di is not None:
+                self.call_after_refresh(setattr, lv, "index", restore_di)
+        self._update_status()
+
+    def action_collapse_all(self) -> None:
+        if not self._expanded:
+            return
+        lv = self.query_one("#search-list", ListView)
+        current_dk = self._highlighted_display_key()
+
+        lv.index = None
+
+        headers_to_update: list[tuple[int, int]] = []
+        sub_dis_to_remove: list[int] = []
+        for gi in self._expanded:
+            header_di = next(i for i, d in enumerate(self._display) if d == (gi, None))
+            headers_to_update.append((gi, header_di))
+            sub_dis_to_remove.extend(i for i, d in enumerate(self._display) if d[0] == gi and d[1] is not None)
+
+        self._expanded.clear()
+        self._build_display()
+
+        all_items = self._list_items()
+        for gi, header_di in headers_to_update:
+            all_items[header_di].query_one(Static).update(self._item_label(gi, None))
+        for sub_di in sorted(sub_dis_to_remove, reverse=True):
+            all_items[sub_di].remove()
+
+        if current_dk is not None:
+            new_di = next((i for i, d in enumerate(self._display) if d == (current_dk[0], None)), None)
+            if new_di is not None:
+                self.call_after_refresh(setattr, lv, "index", new_di)
+        self._update_status()
+
     # ── Selection ─────────────────────────────────────────────────────────
 
     def action_toggle_select(self) -> None:
-        lv = self.query_one("#search-list", ListView)
-        idx = lv.index
-        if idx is None or idx >= len(self._results):
+        dk = self._highlighted_display_key()
+        if dk is None:
             return
-        if idx in self._selected:
-            self._selected.discard(idx)
+        if dk in self._selected:
+            self._selected.discard(dk)
         else:
-            self._selected.add(idx)
-        self._rebuild_list(preserve_index=True)
+            self._selected.add(dk)
+        lv = self.query_one("#search-list", ListView)
+        if lv.index is not None:
+            gi, ei = dk
+            self._update_item_label(lv.index, gi, ei)
         self._update_status()
 
     # ── Navigation ────────────────────────────────────────────────────────
 
+    def _input_focused(self) -> bool:
+        return self.query_one("#search-input", Input).has_focus
+
+    def on_key(self, event: events.Key) -> None:
+        if event.key == "tab" and self._input_focused():
+            lv = self.query_one("#search-list", ListView)
+            if self._display:
+                lv.index = 0
+            lv.focus()
+            event.prevent_default()
+
     def action_cursor_down(self) -> None:
         lv = self.query_one("#search-list", ListView)
-        if not self._results:
+        if not self._display:
             return
-        if lv.index is None:
+        if self._input_focused():
+            lv.index = 0
+        elif lv.index is None:
             lv.index = 0
         else:
             lv.action_cursor_down()
@@ -941,10 +1150,12 @@ class SearchModal(ModalScreen[tuple[str, DBEntry | list[DBEntry]] | None]):
 
     def action_cursor_up(self) -> None:
         lv = self.query_one("#search-list", ListView)
-        if not self._results:
+        if not self._display:
             return
-        if lv.index is None:
-            lv.index = len(self._results) - 1
+        if self._input_focused():
+            lv.index = len(self._display) - 1
+        elif lv.index is None:
+            lv.index = len(self._display) - 1
         else:
             lv.action_cursor_up()
         lv.focus()
@@ -952,8 +1163,18 @@ class SearchModal(ModalScreen[tuple[str, DBEntry | list[DBEntry]] | None]):
     # ── Dismiss helpers ───────────────────────────────────────────────────
 
     def _dismiss_with_action(self, action: str) -> None:
-        entry = self._highlighted_entry()
-        self.dismiss((action, entry) if entry is not None else None)
+        dk = self._highlighted_display_key()
+        if dk is None:
+            self.dismiss(None)
+            return
+        gi, ei = dk
+        group = self._results[gi]
+        if ei is not None:
+            self.dismiss((action, group[ei]))
+        elif action == "edit" and len(group) > 1:
+            self.dismiss(("bulk_edit", group))
+        else:
+            self.dismiss((action, group[0]))
 
     def action_cancel(self) -> None:
         self.dismiss(None)
@@ -979,7 +1200,17 @@ class SearchModal(ModalScreen[tuple[str, DBEntry | list[DBEntry]] | None]):
         if not self._results:
             return
         if self._selected:
-            entries = [self._results[i] for i in sorted(self._selected)]
+            entries: list[DBEntry] = []
+            seen_groups: set[int] = set()
+            for gi, ei in self._selected:
+                if ei is None:
+                    if gi not in seen_groups:
+                        entries.extend(self._results[gi])
+                        seen_groups.add(gi)
+                else:
+                    entry = self._results[gi][ei]
+                    if entry not in entries:
+                        entries.append(entry)
         else:
-            entries = list(self._results)
+            entries = [e for group in self._results for e in group]
         self.dismiss(("bulk_edit", entries))
